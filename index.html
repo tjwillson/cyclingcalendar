@@ -1,0 +1,233 @@
+<!--This code is licensed under the MIT License.-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pro Cycling Calendar</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #045B62;
+      margin: 15px;
+      padding: 0;
+    }
+    .container {
+        max-width: 600px;
+        margin: 10px auto;
+        padding: 5px;
+        background-color: #fff;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+    }
+    .event-container {
+      margin: 10px;
+    }
+    h1 {
+      text-align: center;
+      font-size: 24px;
+      font-weight: bold;
+      color: #FFFFFF;
+      margin-bottom: 20px;
+    }
+    h2 {
+      text-align: center;
+      font-size: 16px;
+      font-weight: bold;
+      color: #FFFFFF;
+      margin-bottom: 20px;
+    }
+    .date {
+      font-size: 14px;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 10px;
+    }
+    .event {
+      max-width: 600px;
+      background-color: #f9f9f9;
+      border-radius: 5px;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+    .event-summary {
+      font-size: 12px;
+      margin-bottom: 5px;
+    }
+    .event-date {
+      font-size: 10px;
+      margin-bottom: 1px;
+    }
+    .no-events {
+      text-align: center;
+      font-size: 1.2em;
+      color: #666;
+    }
+    #made {
+        text-align: center;
+        line-height: 1.5;
+        font-family: monospace;
+        margin-top: auto;
+        margin-bottom: 20px;
+        font-size: 10px;
+        color: #FFFFFF;
+      }
+      #made a {
+        color: #FFFFFF;
+      }
+  </style>
+</head>
+<body>
+  <h1>Pro Cycling Calendar</h1>
+  <p id="made">
+        source on
+        <a href="https://github.com/tjwillson/seasonspong">github</a>
+        | data from
+        <a href="https://inrng.com/calendar/">inrng</a>
+  </p>
+  <h2>Today</h2>
+    
+  <div class="container">
+      <div id="calendar" class="event-container"></div>
+  </div>
+
+  <script>
+    const calendarId = '372129ce15ae495d7a21c14a24f777773bbcb8dba7d0606c52b20a3fd1ceee2b%40group.calendar.google.com';
+    const apiKey = 'AIzaSyBRLvgh23KJ5qkBVXg3_crLYcISdWPQ9_4';
+    const today = new Date().toISOString().slice(0, 10);
+    const todayCalc = new Date();
+    todayCalc.setDate(todayCalc.getDate() + 1);
+    const tomorrow = todayCalc.toISOString().slice(0,10);
+    const calendarDiv = document.getElementById('calendar');
+
+    // Fetch events from Google Calendar API
+    fetch(`https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events?key=${apiKey}`)
+      .then(response => response.json())
+      .then(data => {
+        const events = data.items.filter(event => event.start.date <= today && event.end.date >= tomorrow);
+        if (events.length === 0) {
+          calendarDiv.innerHTML = '<div class="no-events">No events</div>';
+        } else {
+          events.sort((a, b) => (a.start.date || a.start.date) > (b.start.date || b.start.date) ? 1 : -1);
+          const groupedEvents = groupEventsByDate(events);
+          let html = '';
+          groupedEvents.forEach(group => {
+            html += ``;
+            group.events.forEach(event => {
+            const startDate = formatDate(event.start.date);
+            const endDate = formatDate(event.end.date, 1); // Subtract one day from the end date
+                html += `
+                    <div class="event">
+                    <div class="event-summary">${event.summary} - ${event.location}</div>
+                    <div class="event-date">${startDate}${startDate !== endDate ? ` - ${endDate}` : ''}</div>
+                    </div>
+                `;
+                });
+          });
+          calendarDiv.innerHTML = html;
+        }
+      })
+      .catch(error => {
+        console.error('Error fetching events:', error);
+        calendarDiv.innerHTML = '<div class="no-events">Error fetching events</div>';
+      });
+
+    // Helper function to group events by date
+    function groupEventsByDate(events) {
+      const groups = {};
+      events.forEach(event => {
+        const date = new Date(event.start.date);
+        if (!groups[date]) {
+          groups[date] = [];
+        }
+        groups[date].push(event);
+      });
+      return Object.keys(groups).map(date => ({
+        date,
+        events: groups[date]
+      }));
+    }
+
+    // Helper function to format time
+    function formatDate(dateString, daysToSubtract = 0) {
+      const date = new Date(dateString);
+        date.setDate(date.getDate() - daysToSubtract);
+      return date.toLocaleDateString('en-UK', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    }
+  </script>
+    
+  <h2>Upcoming Events</h2>
+    
+  <div class="container">
+    <div id="futurecalendar" class="event-container"></div>
+</div>
+
+<script>
+    const futureCalendarId = '372129ce15ae495d7a21c14a24f777773bbcb8dba7d0606c52b20a3fd1ceee2b%40group.calendar.google.com';
+    const futureApiKey = 'AIzaSyBRLvgh23KJ5qkBVXg3_crLYcISdWPQ9_4';
+    const futureToday = new Date().toISOString().slice(0, 10);
+    const futureTodayCalc = new Date();
+    futureTodayCalc.setDate(futureTodayCalc.getDate() + 1);
+    const futureTomorrow = futureTodayCalc.toISOString().slice(0, 10);
+    const futureCalendarDiv = document.getElementById('futurecalendar');
+
+    // Fetch events from Google Calendar API
+    fetch(`https://www.googleapis.com/calendar/v3/calendars/${futureCalendarId}/events?key=${futureApiKey}`)
+        .then(response => response.json())
+        .then(data => {
+            const events = data.items.filter(event => event.start.date >= futureTomorrow);
+            if (events.length === 0) {
+                futureCalendarDiv.innerHTML = '<div class="no-events">No events</div>';
+            } else {
+                events.sort((a, b) => (a.start.date || a.start.date) > (b.start.date || b.start.date) ? 1 : -1);
+                const groupedEvents = groupEventsByDate(events);
+                let html = '';
+                groupedEvents.forEach(group => {
+                    html += `
+                        <div class="date">${formatDate(group.date)}</div>
+                    `;
+                    group.events.forEach(event => {
+                        const startDate = formatDate(event.start.date);
+                        const endDate = formatDate(event.end.date, 1); // Subtract one day from the end date
+                        html += `
+                            <div class="event">
+                                <div class="event-summary">${event.summary} - ${event.location}</div>
+                                <div class="event-date">${startDate}${startDate !== endDate ? ` - ${endDate}` : ''}</div>
+                            </div>
+                        `;
+                    });
+                });
+                futureCalendarDiv.innerHTML = html;
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching events:', error);
+            futureCalendarDiv.innerHTML = '<div class="no-events">Error fetching events</div>';
+        });
+
+    // Helper function to group events by date
+    function groupEventsByDate(events) {
+        const groups = {};
+        events.forEach(event => {
+            const date = new Date(event.start.date);
+            if (!groups[date]) {
+                groups[date] = [];
+            }
+            groups[date].push(event);
+        });
+        return Object.keys(groups).map(date => ({
+            date,
+            events: groups[date]
+        }));
+    }
+
+    // Helper function to format time
+    function formatDate(dateString, daysToSubtract = 0) {
+        const date = new Date(dateString);
+        date.setDate(date.getDate() - daysToSubtract);
+        return date.toLocaleDateString('en-UK', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    }
+</script>
+</body>
+</html>
